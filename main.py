@@ -1,18 +1,18 @@
-
-
-
+import os
+from flask import Flask, request
 import requests
 import time
-from flask import Flask
+
+# Replace with your CoinMarketCap API key and bot token
+API_KEY = 'd8f80797-8c2e-4987-8045-2667be84e10d'
+BASE_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+BOT_TOKEN = '7653100991:AAE1NvC5J8kS--ZKgAMqnbh_9Fk3LVcHh7c'
+URL = f'https://api.telegram.org/bot{BOT_TOKEN}/'
+
+# Channel ID or username (example: @channelusername or the numeric chat_id)
+CHANNEL_ID = '@bit45670'  # Replace with your actual channel username or chat_id
 
 app = Flask(__name__)
-
-#API_KEY = 'd8f80797-8c2e-4987-8045-2667be84e10d'  # Your CoinMarketCap API key
-API_KEY = 'd8f80797-8c2e-4987-8045-2667be84e10d'  # Your CoinMarketCap API key
-BOT_TOKEN = '7653100991:AAE1NvC5J8kS--ZKgAMqnbh_9Fk3LVcHh7c'  # Your Telegram bot token
-CHANNEL_ID = '@bit45670'  # Replace with your Telegram channel username
-BASE_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
-URL = f'https://api.telegram.org/bot{BOT_TOKEN}/'
 
 def botSendText(botMessage):
     send_text = f'{URL}sendMessage?chat_id={CHANNEL_ID}&parse_mode=Markdown&text={botMessage}'
@@ -57,19 +57,28 @@ def send_crypto_prices():
     else:
         botSendText("Couldn't retrieve prices. Try again later.")
 
-@app.route('/')
-def home():
-    return "Crypto Price Bot is running!"
+# Webhook route for Telegram
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    updates = request.get_json()
+    return '', 200  # Acknowledge the webhook call from Telegram
 
-@app.route('/run')
-def run_bot():
-    try:
-        send_crypto_prices()
-        return "Prices sent successfully!", 200
-    except Exception as e:
-        return f"Error occurred: {e}", 500
-
-if __name__ == '__main__':
+# Run price updates every minute
+def price_update_loop():
     while True:
         send_crypto_prices()
         time.sleep(60)  # Wait for 1 minute before sending the next prices
+
+if __name__ == '__main__':
+    # Start the price update loop
+    from threading import Thread
+    thread = Thread(target=price_update_loop)
+    thread.start()
+    
+    # Start Flask to keep the app running and listening on a port
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
+
+
+
+
